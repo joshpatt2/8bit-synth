@@ -400,11 +400,25 @@ public:
                 bool isActive = stepData.active && stepData.soundSlot == slot;
                 bool isCurrent = (sequencer.currentStep == step && sequencer.isPlaying);
                 
+                // Style the button
                 if (isCurrent) {
-                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.8f, 0.2f, 1.0f));
+                    // Currently playing - bright green
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.9f, 0.2f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 1.0f, 0.3f, 1.0f));
+                } else if (isActive) {
+                    // Active step - medium blue
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.9f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.4f, 0.7f, 1.0f, 1.0f));
+                } else {
+                    // Inactive step - dark gray
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.35f, 0.35f, 1.0f));
                 }
                 
-                if (ImGui::SmallButton(isActive ? "●" : "○")) {
+                const char* glyph = isActive ? "✓" : "·";
+                if (isCurrent) glyph = "►";
+                
+                if (ImGui::SmallButton(glyph)) {
                     if (isActive) {
                         stepData.active = false;
                     } else {
@@ -413,9 +427,7 @@ public:
                     }
                 }
                 
-                if (isCurrent) {
-                    ImGui::PopStyleColor();
-                }
+                ImGui::PopStyleColor(2);
                 
                 ImGui::PopID();
             }
