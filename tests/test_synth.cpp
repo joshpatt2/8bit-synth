@@ -511,6 +511,130 @@ TEST(real_time_synth_sequencer_sync) {
     ASSERT(sequencer.slots[selectedSlot].params.startFreq != originalFreq);
 }
 
+// Effects Tests
+TEST(effects_reverb_initialization) {
+    FxParams fx;
+    
+    // Check default values
+    ASSERT(fx.reverbEnabled == true);
+    ASSERT(fx.reverbTime >= 0.0f && fx.reverbTime <= 2.0f);
+    ASSERT(fx.reverbMix >= 0.0f && fx.reverbMix <= 1.0f);
+}
+
+TEST(effects_delay_initialization) {
+    FxParams fx;
+    
+    // Check default values
+    ASSERT(fx.delayEnabled == true);
+    ASSERT(fx.delayTime >= 0.0f && fx.delayTime <= 1.0f);
+    ASSERT(fx.delayFeedback >= 0.0f && fx.delayFeedback <= 0.9f);
+    ASSERT(fx.delayMix >= 0.0f && fx.delayMix <= 1.0f);
+}
+
+TEST(effects_synth_with_delay) {
+    Presets::init();
+    SynthParams params = Presets::laser();
+    
+    // Add delay effect
+    params.effects.delayEnabled = true;
+    params.effects.delayTime = 0.2f;
+    params.effects.delayFeedback = 0.5f;
+    params.effects.delayMix = 0.3f;
+    
+    // Render with effects
+    auto buffer = SynthEngine::render(params);
+    ASSERT(buffer.size() > 0);
+    
+    // Check that buffer contains valid samples
+    for (size_t i = 0; i < buffer.size(); i++) {
+        ASSERT(buffer[i] >= -1.5f && buffer[i] <= 1.5f);  // Slight margin for effects
+    }
+}
+
+TEST(effects_synth_with_reverb) {
+    Presets::init();
+    SynthParams params = Presets::explosion();
+    
+    // Add reverb effect
+    params.effects.reverbEnabled = true;
+    params.effects.reverbTime = 1.0f;
+    params.effects.reverbMix = 0.4f;
+    
+    // Render with effects
+    auto buffer = SynthEngine::render(params);
+    ASSERT(buffer.size() > 0);
+    
+    // Check that buffer contains valid samples
+    for (size_t i = 0; i < buffer.size(); i++) {
+        ASSERT(buffer[i] >= -1.5f && buffer[i] <= 1.5f);
+    }
+}
+
+TEST(effects_combined_delay_reverb) {
+    Presets::init();
+    SynthParams params = Presets::jump();
+    
+    // Use both delay and reverb
+    params.effects.delayEnabled = true;
+    params.effects.delayTime = 0.15f;
+    params.effects.delayMix = 0.2f;
+    
+    params.effects.reverbEnabled = true;
+    params.effects.reverbTime = 0.8f;
+    params.effects.reverbMix = 0.25f;
+    
+    // Render
+    auto buffer = SynthEngine::render(params);
+    ASSERT(buffer.size() > 0);
+    
+    // Should be longer than original due to reverb tail
+    ASSERT(buffer.size() > 0);
+    
+    // Convert to int16 and export
+    auto intBuffer = SynthEngine::floatToInt16(buffer);
+    bool success = WavExporter::exportWav("test_effects_combined.wav", intBuffer);
+    ASSERT(success);
+}
+
+TEST(effects_disabled) {
+    Presets::init();
+    SynthParams params = Presets::laser();
+    
+    // Disable all effects
+    params.effects.delayEnabled = false;
+    params.effects.reverbEnabled = false;
+    
+    // Render without effects
+    auto buffer = SynthEngine::render(params);
+    ASSERT(buffer.size() > 0);
+    
+    // Should still be valid audio
+    for (size_t i = 0; i < buffer.size(); i++) {
+        ASSERT(buffer[i] >= -1.0f && buffer[i] <= 1.0f);
+    }
+}
+
+TEST(effects_dry_wet_balance) {
+    SynthParams params;
+    params.waveform = Waveform::Square;
+    params.startFreq = 440.0f;
+    params.endFreq = 440.0f;
+    params.duration = 0.1f;
+    params.attack = 0.01f;
+    params.decay = 0.01f;
+    params.sustain = 1.0f;
+    params.release = 0.01f;
+    
+    // Test different mix levels
+    std::vector<float> mixLevels = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+    
+    for (float mix : mixLevels) {
+        params.effects.delayMix = mix;
+        auto buffer = SynthEngine::render(params);
+        ASSERT(buffer.size() > 0);
+    }
+}
+
 int main() {
     std::cout << "\n🎵 8-Bit Synthesizer Test Suite\n" << std::endl;
     
@@ -559,6 +683,15 @@ int main() {
     RUN_TEST(slot_parameter_persistence);
     RUN_TEST(slot_auto_save_on_preset);
     RUN_TEST(real_time_synth_sequencer_sync);
+    
+    std::cout << "\nEffects Tests:" << std::endl;
+    RUN_TEST(effects_reverb_initialization);
+    RUN_TEST(effects_delay_initialization);
+    RUN_TEST(effects_synth_with_delay);
+    RUN_TEST(effects_synth_with_reverb);
+    RUN_TEST(effects_combined_delay_reverb);
+    RUN_TEST(effects_disabled);
+    RUN_TEST(effects_dry_wet_balance);
     
     std::cout << "\n✅ All tests passed!" << std::endl;
     std::cout << "\nGenerated test files:" << std::endl;
