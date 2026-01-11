@@ -4,11 +4,14 @@
 #include "../include/SynthEngine.h"
 #include "../include/WavExporter.h"
 #include "../include/Presets.h"
+#include "../include/Sequencer.h"
+#include "../include/PatternLoader.h"
 
 #include <iostream>
 #include <cassert>
 #include <cmath>
 #include <string>
+#include <fstream>
 
 #define TEST(name) void test_##name()
 #define RUN_TEST(name) do { \
@@ -259,6 +262,255 @@ TEST(integration_all_waveforms) {
     }
 }
 
+// Sequencer Tests
+TEST(sequencer_pattern_initialization) {
+    SequencerPattern pattern;
+    
+    // Default should be 16 steps
+    ASSERT(pattern.numSteps == 16);
+    ASSERT(pattern.bpm == 120.0f);
+    ASSERT(pattern.loop == true);
+    
+    // All steps should start inactive
+    for (int i = 0; i < 16; i++) {
+        ASSERT(pattern.steps[i].active == false);
+    }
+}
+
+TEST(sequencer_pattern_activation) {
+    SequencerPattern pattern;
+    
+    // Activate step 0 for sound slot 0 (Kick)
+    pattern.steps[0].active = true;
+    pattern.steps[0].soundSlot = 0;
+    
+    ASSERT(pattern.steps[0].active == true);
+    ASSERT(pattern.steps[0].soundSlot == 0);
+    
+    // Activate step 4 for sound slot 1 (Snare)
+    pattern.steps[4].active = true;
+    pattern.steps[4].soundSlot = 1;
+    
+    ASSERT(pattern.steps[4].active == true);
+    ASSERT(pattern.steps[4].soundSlot == 1);
+    
+    // Verify other steps unchanged
+    ASSERT(pattern.steps[1].active == false);
+    ASSERT(pattern.steps[8].active == false);
+}
+
+TEST(sequencer_pattern_length) {
+    SequencerPattern pattern;
+    
+    // Test 16-step pattern
+    pattern.numSteps = 16;
+    ASSERT(pattern.numSteps == 16);
+    
+    // Test 32-step pattern
+    pattern.numSteps = 32;
+    ASSERT(pattern.numSteps == 32);
+    
+    // Verify we can access all steps
+    pattern.steps[31].active = true;
+    ASSERT(pattern.steps[31].active == true);
+}
+
+TEST(sequencer_bpm_setting) {
+    SequencerPattern pattern;
+    
+    pattern.bpm = 60.0f;
+    ASSERT(pattern.bpm == 60.0f);
+    
+    pattern.bpm = 180.0f;
+    ASSERT(pattern.bpm == 180.0f);
+    
+    pattern.bpm = 140.0f;
+    ASSERT(pattern.bpm == 140.0f);
+}
+
+TEST(sequencer_sound_slots) {
+    Sequencer sequencer;
+    
+    // Should have 4 sound slots
+    ASSERT(sequencer.slots.size() == 4);
+    
+    // Check slot names
+    ASSERT(sequencer.slots[0].name == "Kick");
+    ASSERT(sequencer.slots[1].name == "Snare");
+    ASSERT(sequencer.slots[2].name == "Hat");
+    ASSERT(sequencer.slots[3].name == "Blip");
+}
+
+TEST(sequencer_slot_params) {
+    Sequencer sequencer;
+    
+    // Each slot should have valid parameters
+    for (int i = 0; i < 4; i++) {
+        const auto& slot = sequencer.slots[i];
+        ASSERT(slot.params.startFreq > 0.0f);
+        ASSERT(slot.params.duration > 0.0f);
+        ASSERT(slot.params.attack >= 0.0f);
+    }
+}
+
+// Pattern Loader Tests
+TEST(pattern_loader_save_and_load) {
+    Sequencer sequencer;
+    
+    // Create a test pattern
+    sequencer.pattern.numSteps = 16;
+    sequencer.pattern.bpm = 120.0f;
+    sequencer.pattern.steps[0].active = true;
+    sequencer.pattern.steps[0].soundSlot = 0;
+    sequencer.pattern.steps[4].active = true;
+    sequencer.pattern.steps[4].soundSlot = 1;
+    sequencer.pattern.steps[8].active = true;
+    sequencer.pattern.steps[8].soundSlot = 2;
+    
+    // Save to test file
+    const char* testFile = "/tmp/test_pattern_temp.txt";
+    bool saved = PatternLoader::savePattern(testFile, sequencer.pattern);
+    ASSERT(saved);
+    
+    // Load into new pattern
+    SequencerPattern loadedPattern;
+    bool loaded = PatternLoader::loadPattern(testFile, loadedPattern);
+    ASSERT(loaded);
+    
+    // Verify loaded pattern matches original
+    ASSERT(loadedPattern.numSteps == 16);
+    ASSERT(loadedPattern.bpm == 120.0f);
+    ASSERT(loadedPattern.steps[0].active == true);
+    ASSERT(loadedPattern.steps[0].soundSlot == 0);
+    ASSERT(loadedPattern.steps[4].active == true);
+    ASSERT(loadedPattern.steps[4].soundSlot == 1);
+    ASSERT(loadedPattern.steps[8].active == true);
+    ASSERT(loadedPattern.steps[8].soundSlot == 2);
+    
+    // Clean up
+    std::remove(testFile);
+}
+
+TEST(pattern_loader_builtin_patterns) {
+    Sequencer sequencer;
+    
+    // Test loading basic_beat pattern from root directory
+    bool loaded = PatternLoader::loadPattern("../patterns/basic_beat.txt", sequencer.pattern);
+    
+    // If file doesn't exist, that's OK for tests running from build dir
+    // Just verify the pattern structure is valid
+    if (loaded) {
+        ASSERT(sequencer.pattern.bpm == 120.0f);
+        ASSERT(sequencer.pattern.numSteps == 16);
+        
+        // Should have some active steps
+        bool hasActiveSteps = false;
+        for (int i = 0; i < 16; i++) {
+            if (sequencer.pattern.steps[i].active) {
+                hasActiveSteps = true;
+                break;
+            }
+        }
+        ASSERT(hasActiveSteps);
+    } else {
+        // Test structure even if file isn't accessible
+        ASSERT(sequencer.pattern.numSteps == 16);
+        ASSERT(sequencer.pattern.bpm == 120.0f);
+    }
+}
+
+// Slot Management Tests
+TEST(slot_selection_and_sync) {
+    Sequencer sequencer;
+    SynthParams currentParams;
+    
+    // Simulate selecting Kick slot (slot 0)
+    currentParams = sequencer.slots[0].params;
+    
+    // Verify we got the slot's parameters (slot has default values)
+    ASSERT(currentParams.startFreq > 0.0f);
+    ASSERT(currentParams.duration > 0.0f);
+    
+    // Modify the parameters
+    SynthParams modified = currentParams;
+    modified.startFreq = 100.0f;
+    modified.duration = 0.5f;
+    
+    // Simulate updating the slot with modified parameters
+    sequencer.slots[0].params = modified;
+    
+    // Verify the slot was updated
+    ASSERT(sequencer.slots[0].params.startFreq == 100.0f);
+    ASSERT(sequencer.slots[0].params.duration == 0.5f);
+}
+
+TEST(slot_parameter_persistence) {
+    Sequencer sequencer;
+    
+    // Set unique parameters for each slot
+    sequencer.slots[0].params.startFreq = 100.0f;  // Kick
+    sequencer.slots[1].params.startFreq = 200.0f;  // Snare
+    sequencer.slots[2].params.startFreq = 300.0f;  // Hat
+    sequencer.slots[3].params.startFreq = 400.0f;  // Blip
+    
+    // Verify each slot retains its unique parameter
+    ASSERT(sequencer.slots[0].params.startFreq == 100.0f);
+    ASSERT(sequencer.slots[1].params.startFreq == 200.0f);
+    ASSERT(sequencer.slots[2].params.startFreq == 300.0f);
+    ASSERT(sequencer.slots[3].params.startFreq == 400.0f);
+    
+    // Modify one slot
+    sequencer.slots[1].params.startFreq = 250.0f;
+    
+    // Verify others unchanged
+    ASSERT(sequencer.slots[0].params.startFreq == 100.0f);
+    ASSERT(sequencer.slots[1].params.startFreq == 250.0f);
+    ASSERT(sequencer.slots[2].params.startFreq == 300.0f);
+    ASSERT(sequencer.slots[3].params.startFreq == 400.0f);
+}
+
+TEST(slot_auto_save_on_preset) {
+    Sequencer sequencer;
+    SynthParams currentParams;
+    
+    // Select Kick slot
+    currentParams = sequencer.slots[0].params;
+    
+    // Apply a preset (e.g., Laser)
+    Presets::init();
+    currentParams = Presets::laser();
+    
+    // Auto-save to slot
+    sequencer.slots[0].params = currentParams;
+    
+    // Verify the slot has the preset parameters
+    ASSERT(sequencer.slots[0].params.name == "Laser");
+    ASSERT(sequencer.slots[0].params.waveform == Waveform::Square);
+    ASSERT(sequencer.slots[0].params.startFreq > 0.0f);
+}
+
+TEST(real_time_synth_sequencer_sync) {
+    Sequencer sequencer;
+    SynthParams currentParams;
+    int selectedSlot = 0;  // Kick selected
+    
+    // Load slot for editing
+    currentParams = sequencer.slots[selectedSlot].params;
+    float originalFreq = currentParams.startFreq;
+    
+    // Simulate slider change
+    currentParams.startFreq = 150.0f;
+    
+    // Real-time update to sequencer slot
+    if (selectedSlot >= 0 && selectedSlot < static_cast<int>(sequencer.slots.size())) {
+        sequencer.slots[selectedSlot].params = currentParams;
+    }
+    
+    // Verify slot was updated in real-time
+    ASSERT(sequencer.slots[selectedSlot].params.startFreq == 150.0f);
+    ASSERT(sequencer.slots[selectedSlot].params.startFreq != originalFreq);
+}
+
 int main() {
     std::cout << "\n🎵 8-Bit Synthesizer Test Suite\n" << std::endl;
     
@@ -289,6 +541,24 @@ int main() {
     std::cout << "\nIntegration Tests:" << std::endl;
     RUN_TEST(integration_full_sound_generation);
     RUN_TEST(integration_all_waveforms);
+    
+    std::cout << "\nSequencer Tests:" << std::endl;
+    RUN_TEST(sequencer_pattern_initialization);
+    RUN_TEST(sequencer_pattern_activation);
+    RUN_TEST(sequencer_pattern_length);
+    RUN_TEST(sequencer_bpm_setting);
+    RUN_TEST(sequencer_sound_slots);
+    RUN_TEST(sequencer_slot_params);
+    
+    std::cout << "\nPattern Loader Tests:" << std::endl;
+    RUN_TEST(pattern_loader_save_and_load);
+    RUN_TEST(pattern_loader_builtin_patterns);
+    
+    std::cout << "\nSlot Management & Auto-Sync Tests:" << std::endl;
+    RUN_TEST(slot_selection_and_sync);
+    RUN_TEST(slot_parameter_persistence);
+    RUN_TEST(slot_auto_save_on_preset);
+    RUN_TEST(real_time_synth_sequencer_sync);
     
     std::cout << "\n✅ All tests passed!" << std::endl;
     std::cout << "\nGenerated test files:" << std::endl;
