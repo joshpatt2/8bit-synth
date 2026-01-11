@@ -40,7 +40,8 @@ public:
     SequencerPattern pattern;
     std::vector<SoundSlot> slots;
     
-    int currentStep = -1;
+    int currentStep = -1;  // Currently playing step
+    int selectedStep = -1; // User-selected step for editing
     bool isPlaying = false;
     
     float getStepDuration() const {

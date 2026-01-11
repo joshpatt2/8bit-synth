@@ -359,6 +359,20 @@ public:
         
         ImGui::Separator();
         
+        // Show selected step info
+        if (sequencer.selectedStep >= 0 && sequencer.selectedStep < sequencer.pattern.numSteps) {
+            ImGui::TextColored(ImVec4(0.9f, 0.7f, 0.2f, 1.0f), "Selected Step: %d", sequencer.selectedStep);
+            auto& step = sequencer.pattern.steps[sequencer.selectedStep];
+            if (step.active) {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.3f, 0.9f, 0.3f, 1.0f), "(Slot: %s)", sequencer.slots[step.soundSlot].name.c_str());
+            }
+        } else {
+            ImGui::TextDisabled("No step selected");
+        }
+        
+        ImGui::Separator();
+        
         // Sound slot editor
         ImGui::Text("Sound Slots:");
         for (int i = 0; i < 4; i++) {
@@ -401,12 +415,17 @@ public:
                 auto& stepData = sequencer.pattern.steps[step];
                 bool isActive = stepData.active && stepData.soundSlot == slot;
                 bool isCurrent = (sequencer.currentStep == step && sequencer.isPlaying);
+                bool isSelected = (sequencer.selectedStep == step);
                 
-                // Style the button
+                // Style the button based on state
                 if (isCurrent) {
-                    // Currently playing - bright green
+                    // Currently playing - bright green with outline
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.9f, 0.2f, 1.0f));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 1.0f, 0.3f, 1.0f));
+                } else if (isSelected) {
+                    // Selected step - bright orange/gold
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.9f, 0.7f, 0.2f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.8f, 0.3f, 1.0f));
                 } else if (isActive) {
                     // Active step - medium blue
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 0.9f, 1.0f));
@@ -419,14 +438,18 @@ public:
                 
                 const char* glyph = isActive ? "✓" : "·";
                 if (isCurrent) glyph = "►";
+                if (isSelected && !isCurrent) glyph = "◆";
                 
                 if (ImGui::SmallButton(glyph)) {
+                    // Toggle active state
                     if (isActive) {
                         stepData.active = false;
                     } else {
                         stepData.active = true;
                         stepData.soundSlot = slot;
                     }
+                    // Always set as selected when clicked
+                    sequencer.selectedStep = step;
                 }
                 
                 ImGui::PopStyleColor(2);
