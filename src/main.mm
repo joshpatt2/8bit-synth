@@ -10,6 +10,8 @@
 #include "Presets.h"
 #include "Sequencer.h"
 #include "PatternLoader.h"
+#include "Song.h"
+#include "SongEngine.h"
 
 #include <vector>
 #include <string>
@@ -478,6 +480,87 @@ public:
         ImGui::End();
     }
     
+    void renderSongUI() {
+        ImGui::Begin("Song Composer", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        
+        ImGui::Text("🎼 Song Mode");
+        ImGui::Separator();
+        
+        // Song name input
+        static char songName[256] = "Untitled Song";
+        ImGui::InputText("Song Name", songName, sizeof(songName));
+        song.name = std::string(songName);
+        
+        ImGui::Separator();
+        
+        // Pattern library
+        ImGui::Text("Pattern Library:");
+        if (ImGui::Button("+ Add Current Pattern", ImVec2(200, 0))) {
+            SequencerPattern newPattern = sequencer.pattern;
+            song.patterns.push_back(newPattern);
+            SDL_Log("Pattern added to library (total: %zu)", song.patterns.size());
+        }
+        
+        ImGui::Separator();
+        
+        // Current pattern display
+        ImGui::Text("Patterns in Library: %zu", song.patterns.size());
+        for (size_t i = 0; i < song.patterns.size(); i++) {
+            ImGui::PushID(static_cast<int>(i));
+            
+            ImGui::Text("Pattern %zu: %d steps @ %.0f BPM", i, song.patterns[i].numSteps, song.patterns[i].bpm);
+            ImGui::SameLine();
+            
+            if (ImGui::SmallButton("→ Add to Song")) {
+                song.addPatternToArrangement(i);
+                SDL_Log("Pattern %zu added to arrangement", i);
+            }
+            
+            ImGui::PopID();
+        }
+        
+        ImGui::Separator();
+        
+        // Song arrangement timeline
+        ImGui::Text("Song Arrangement (%zu patterns)", song.arrangement.size());
+        
+        if (song.arrangement.empty()) {
+            ImGui::TextColored(ImVec4(0.8f, 0.5f, 0.3f, 1.0f), "Empty - add patterns to create song");
+        } else {
+            float totalDuration = song.getTotalDuration(120.0f);
+            ImGui::Text("Total Duration: %.1f seconds", totalDuration);
+            
+            // Display arrangement
+            for (size_t i = 0; i < song.arrangement.size(); i++) {
+                ImGui::PushID(static_cast<int>(i));
+                
+                int patternIdx = song.arrangement[i];
+                ImGui::Text("[%zu] Pattern %d (%d steps)", i, patternIdx, song.patterns[patternIdx].numSteps);
+                
+                ImGui::SameLine();
+                if (ImGui::SmallButton("×")) {
+                    song.removePatternFromArrangement(i);
+                    SDL_Log("Pattern removed from arrangement at position %zu", i);
+                }
+                
+                ImGui::PopID();
+            }
+        }
+        
+        ImGui::Separator();
+        
+        // Song export
+        if (!song.arrangement.empty()) {
+            if (ImGui::Button("🎵 Export Song as WAV", ImVec2(200, 30))) {
+                exportSong();
+            }
+        } else {
+            ImGui::TextDisabled("(Add patterns to enable export)");
+        }
+        
+        ImGui::End();
+    }
+    
     void selectSlot(int slotIndex) {
         if (slotIndex >= 0 && slotIndex < static_cast<int>(sequencer.slots.size())) {
             selectedSlot = slotIndex;
@@ -491,11 +574,35 @@ public:
         }
     }
     
+    void exportSong() {
+        // Render the entire song
+        std::vector<SynthParams> soundSlots;
+        for (const auto& slot : sequencer.slots) {
+            soundSlots.push_back(slot.params);
+        }
+        
+        auto songBuffer = SongEngine::renderSong(song, soundSlots);
+        auto intBuffer = SynthEngine::floatToInt16(songBuffer);
+        
+        // Generate filename with timestamp
+        time_t now = time(nullptr);
+        char filename[256];
+        snprintf(filename, sizeof(filename), "sfx_song_%ld.wav", now);
+        
+        if (WavExporter::exportWav(filename, intBuffer)) {
+            SDL_Log("Song exported: %s (%zu samples)", filename, intBuffer.size());
+            lastExportPath = filename;
+        } else {
+            SDL_Log("Failed to export song");
+        }
+    }
+    
 private:
     SynthParams currentParams;
     AudioOutput audioOutput;
     std::string lastExportPath;
     Sequencer sequencer;
+    Song song;
     std::chrono::steady_clock::time_point lastStepTime;
     int selectedSlot;
 };
@@ -578,6 +685,7 @@ int main(int argc, char* argv[]) {
         // Render our UI
         app.renderUI();
         app.renderSequencerUI();
+        app.renderSongUI();
         
         // Rendering
         ImGui::Render();
