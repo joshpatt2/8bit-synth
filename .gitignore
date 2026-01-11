@@ -21,6 +21,9 @@ test_synth
 # Output files
 *.wav
 
+# User-saved patterns (keep demo patterns)
+patterns/saved_*.txt
+
 # ImGui state
 imgui.ini
 

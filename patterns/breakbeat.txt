@@ -1,0 +1,26 @@
+# Breakbeat - Syncopated rhythm
+BPM: 140
+STEPS: 16
+
+# Kick pattern
+0:0
+6:0
+10:0
+
+# Snare pattern
+4:1
+12:1
+
+# Hi-hat pattern (off-beat)
+1:2
+3:2
+5:2
+7:2
+9:2
+11:2
+13:2
+15:2
+
+# Blip accents
+2:3
+14:3

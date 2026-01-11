@@ -9,6 +9,7 @@
 #include "WavExporter.h"
 #include "Presets.h"
 #include "Sequencer.h"
+#include "PatternLoader.h"
 
 #include <vector>
 #include <string>
@@ -24,6 +25,7 @@ public:
         setupSequencerSounds();
         
         lastStepTime = std::chrono::steady_clock::now();
+        selectedSlot = -1;  // No slot selected by default
     }
     
     void renderUI() {
@@ -31,6 +33,14 @@ public:
         
         // Title
         ImGui::Text("🎵 Retro Sound Effect Generator");
+        
+        // Show which slot is being edited, if any
+        if (selectedSlot >= 0 && selectedSlot < static_cast<int>(sequencer.slots.size())) {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), " - Editing: %s", 
+                             sequencer.slots[selectedSlot].name.c_str());
+        }
+        
         ImGui::Separator();
         
         // Waveform selection
@@ -39,42 +49,65 @@ public:
         int currentWaveform = static_cast<int>(currentParams.waveform);
         if (ImGui::Combo("##waveform", &currentWaveform, waveforms, 4)) {
             currentParams.waveform = static_cast<Waveform>(currentWaveform);
+            updateSelectedSlot();
         }
         
         // Duty cycle (for square wave)
         if (currentParams.waveform == Waveform::Square) {
-            ImGui::SliderFloat("Duty Cycle", &currentParams.dutyCycle, 0.1f, 0.9f);
+            if (ImGui::SliderFloat("Duty Cycle", &currentParams.dutyCycle, 0.1f, 0.9f)) {
+                updateSelectedSlot();
+            }
         }
         
         ImGui::Separator();
         
         // Frequency controls
         ImGui::Text("Frequency");
-        ImGui::SliderFloat("Start (Hz)", &currentParams.startFreq, 50.0f, 2000.0f);
-        ImGui::SliderFloat("End (Hz)", &currentParams.endFreq, 50.0f, 2000.0f);
-        ImGui::SliderFloat("Slide Speed", &currentParams.slideSpeed, 0.0f, 1.0f);
+        if (ImGui::SliderFloat("Start (Hz)", &currentParams.startFreq, 50.0f, 2000.0f)) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("End (Hz)", &currentParams.endFreq, 50.0f, 2000.0f)) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("Slide Speed", &currentParams.slideSpeed, 0.0f, 1.0f)) {
+            updateSelectedSlot();
+        }
         
         ImGui::Separator();
         
         // Envelope controls
         ImGui::Text("Envelope (ADSR)");
-        ImGui::SliderFloat("Attack", &currentParams.attack, 0.001f, 0.5f, "%.3f s");
-        ImGui::SliderFloat("Decay", &currentParams.decay, 0.01f, 1.0f, "%.3f s");
-        ImGui::SliderFloat("Sustain", &currentParams.sustain, 0.0f, 1.0f);
-        ImGui::SliderFloat("Release", &currentParams.release, 0.01f, 2.0f, "%.3f s");
+        if (ImGui::SliderFloat("Attack", &currentParams.attack, 0.001f, 0.5f, "%.3f s")) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("Decay", &currentParams.decay, 0.01f, 1.0f, "%.3f s")) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("Sustain", &currentParams.sustain, 0.0f, 1.0f)) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("Release", &currentParams.release, 0.01f, 2.0f, "%.3f s")) {
+            updateSelectedSlot();
+        }
         
         ImGui::Separator();
         
         // Duration
-        ImGui::SliderFloat("Duration", &currentParams.duration, 0.05f, 2.0f, "%.2f s");
+        if (ImGui::SliderFloat("Duration", &currentParams.duration, 0.05f, 2.0f, "%.2f s")) {
+            updateSelectedSlot();
+        }
         
         ImGui::Separator();
         
         // Vibrato (stretch feature)
         ImGui::Text("Vibrato");
-        ImGui::SliderFloat("Vibrato Freq", &currentParams.vibratoFreq, 0.0f, 20.0f, "%.1f Hz");
+        if (ImGui::SliderFloat("Vibrato Freq", &currentParams.vibratoFreq, 0.0f, 20.0f, "%.1f Hz")) {
+            updateSelectedSlot();
+        }
         if (currentParams.vibratoFreq > 0.0f) {
-            ImGui::SliderFloat("Vibrato Depth", &currentParams.vibratoDepth, 0.0f, 0.2f);
+            if (ImGui::SliderFloat("Vibrato Depth", &currentParams.vibratoDepth, 0.0f, 0.2f)) {
+                updateSelectedSlot();
+            }
         }
         
         ImGui::Separator();
@@ -100,6 +133,15 @@ public:
             exportWav();
         }
         
+        // Save to sequencer slot button
+        if (selectedSlot >= 0) {
+            ImGui::SameLine();
+            if (ImGui::Button("💾 Save to Slot", ImVec2(120, 30))) {
+                updateSelectedSlot();
+                SDL_Log("Updated: %s", sequencer.slots[selectedSlot].name.c_str());
+            }
+        }
+        
         ImGui::Separator();
         
         // Presets
@@ -107,28 +149,43 @@ public:
         
         if (ImGui::Button("Laser", ImVec2(100, 0))) {
             currentParams = Presets::laser();
+            if (selectedSlot >= 0) updateSelectedSlot();
         }
         ImGui::SameLine();
         if (ImGui::Button("Explosion", ImVec2(100, 0))) {
             currentParams = Presets::explosion();
+            if (selectedSlot >= 0) updateSelectedSlot();
         }
         ImGui::SameLine();
         if (ImGui::Button("Pickup", ImVec2(100, 0))) {
             currentParams = Presets::pickup();
+            if (selectedSlot >= 0) updateSelectedSlot();
         }
         
         if (ImGui::Button("Jump", ImVec2(100, 0))) {
             currentParams = Presets::jump();
+            if (selectedSlot >= 0) updateSelectedSlot();
         }
         ImGui::SameLine();
         if (ImGui::Button("Hurt", ImVec2(100, 0))) {
             currentParams = Presets::hurt();
+            if (selectedSlot >= 0) updateSelectedSlot();
         }
         ImGui::SameLine();
         if (ImGui::Button("Powerup", ImVec2(100, 0))) {
             currentParams = Presets::powerup();
+            if (selectedSlot >= 0) updateSelectedSlot();
         }
-        
+
+        // Drum presets
+        if (ImGui::Button("808 Kick", ImVec2(100, 0))) {
+            currentParams = Presets::kick808();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("808 Short", ImVec2(100, 0))) {
+            currentParams = Presets::kick808Short();
+        }
+
         ImGui::Separator();
         
         // Status
@@ -266,6 +323,27 @@ public:
         
         ImGui::Separator();
         
+        // Sound slot editor
+        ImGui::Text("Sound Slots:");
+        for (int i = 0; i < 4; i++) {
+            bool isSelected = (selectedSlot == i);
+            if (isSelected) {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.8f, 1.0f));
+            }
+            
+            if (ImGui::Button(sequencer.slots[i].name.c_str(), ImVec2(100, 0))) {
+                selectSlot(i);
+            }
+            
+            if (isSelected) {
+                ImGui::PopStyleColor();
+            }
+            
+            if (i < 3) ImGui::SameLine();
+        }
+        
+        ImGui::Separator();
+        
         // Step grid
         ImGui::Text("Step Grid:");
         
@@ -321,23 +399,50 @@ public:
             }
         }
         
+        ImGui::Separator();
+        ImGui::Text("Load Demo Pattern:");
+        
+        if (ImGui::Button("Basic Beat", ImVec2(120, 0))) {
+            PatternLoader::loadPattern("patterns/basic_beat.txt", sequencer.pattern);
+        }
         ImGui::SameLine();
-        if (ImGui::Button("Demo Pattern")) {
-            // Simple demo: kick on 1 and 9, snare on 5 and 13, hats on every other step
-            for (auto& step : sequencer.pattern.steps) {
-                step.active = false;
-            }
-            sequencer.pattern.steps[0].active = true; sequencer.pattern.steps[0].soundSlot = 0;  // Kick
-            sequencer.pattern.steps[8].active = true; sequencer.pattern.steps[8].soundSlot = 0;  // Kick
-            sequencer.pattern.steps[4].active = true; sequencer.pattern.steps[4].soundSlot = 1;  // Snare
-            sequencer.pattern.steps[12].active = true; sequencer.pattern.steps[12].soundSlot = 1; // Snare
-            for (int i = 0; i < 16; i += 2) {
-                sequencer.pattern.steps[i].active = true;
-                sequencer.pattern.steps[i].soundSlot = 2;  // Hat
+        if (ImGui::Button("Breakbeat", ImVec2(120, 0))) {
+            PatternLoader::loadPattern("patterns/breakbeat.txt", sequencer.pattern);
+        }
+        
+        if (ImGui::Button("Game Over", ImVec2(120, 0))) {
+            PatternLoader::loadPattern("patterns/game_over.txt", sequencer.pattern);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Boss Battle", ImVec2(120, 0))) {
+            PatternLoader::loadPattern("patterns/boss_battle.txt", sequencer.pattern);
+        }
+        
+        ImGui::Separator();
+        
+        if (ImGui::Button("Save Pattern...")) {
+            time_t now = time(nullptr);
+            char filename[256];
+            snprintf(filename, sizeof(filename), "patterns/saved_%ld.txt", now);
+            if (PatternLoader::savePattern(filename, sequencer.pattern)) {
+                SDL_Log("Pattern saved: %s", filename);
             }
         }
         
         ImGui::End();
+    }
+    
+    void selectSlot(int slotIndex) {
+        if (slotIndex >= 0 && slotIndex < static_cast<int>(sequencer.slots.size())) {
+            selectedSlot = slotIndex;
+            currentParams = sequencer.slots[slotIndex].params;
+        }
+    }
+    
+    void updateSelectedSlot() {
+        if (selectedSlot >= 0 && selectedSlot < static_cast<int>(sequencer.slots.size())) {
+            sequencer.slots[selectedSlot].params = currentParams;
+        }
     }
     
 private:
@@ -346,6 +451,7 @@ private:
     std::string lastExportPath;
     Sequencer sequencer;
     std::chrono::steady_clock::time_point lastStepTime;
+    int selectedSlot;
 };
 
 int main(int argc, char* argv[]) {

@@ -104,7 +104,39 @@ public:
         p.dutyCycle = 0.5f;
         return p;
     }
-    
+
+    // 808-style kick drum
+    static SynthParams kick808() {
+        SynthParams p;
+        p.name = "808 Kick";
+        p.waveform = Waveform::Triangle;  // Smooth, sine-like
+        p.startFreq = 150.0f;             // Start with punch
+        p.endFreq = 45.0f;                // Drop to sub-bass
+        p.slideSpeed = 0.15f;             // Fast pitch drop
+        p.attack = 0.005f;                // Punchy transient
+        p.decay = 0.4f;                   // Long boom tail
+        p.sustain = 0.0f;                 // Percussive, no sustain
+        p.release = 0.3f;                 // Fade out smoothly
+        p.duration = 0.5f;                // Let it breathe
+        return p;
+    }
+
+    // Snappier 808 for faster tempos
+    static SynthParams kick808Short() {
+        SynthParams p;
+        p.name = "808 Short";
+        p.waveform = Waveform::Triangle;
+        p.startFreq = 180.0f;             // Higher punch
+        p.endFreq = 50.0f;
+        p.slideSpeed = 0.1f;              // Even faster drop
+        p.attack = 0.003f;
+        p.decay = 0.2f;                   // Tighter
+        p.sustain = 0.0f;
+        p.release = 0.15f;
+        p.duration = 0.25f;               // Snappy
+        return p;
+    }
+
     static SynthParams randomize() {
         SynthParams p;
         p.name = "Random";
