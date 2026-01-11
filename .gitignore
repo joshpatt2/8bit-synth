@@ -1,6 +1,7 @@
 # Build artifacts
 build/
 8bit-synth
+test_synth
 *.o
 *.a
 *.dylib
@@ -20,5 +21,11 @@ build/
 # Output files
 *.wav
 
+# ImGui state
+imgui.ini
+
 # External dependencies
 external/
+
+# Private submission materials
+SUBMISSION.md
