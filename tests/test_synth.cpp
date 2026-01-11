@@ -6,6 +6,8 @@
 #include "../include/Presets.h"
 #include "../include/Sequencer.h"
 #include "../include/PatternLoader.h"
+#include "../include/Song.h"
+#include "../include/SongEngine.h"
 
 #include <iostream>
 #include <cassert>
@@ -635,6 +637,140 @@ TEST(effects_dry_wet_balance) {
     }
 }
 
+// Song Mode Tests
+TEST(song_initialization) {
+    Song song;
+    
+    ASSERT(song.patterns.empty());
+    ASSERT(song.arrangement.empty());
+    ASSERT(song.name == "Untitled Song");
+}
+
+TEST(song_arrangement) {
+    Song song;
+    
+    // Create two patterns
+    SequencerPattern pattern1;
+    pattern1.numSteps = 16;
+    pattern1.bpm = 120.0f;
+    
+    SequencerPattern pattern2;
+    pattern2.numSteps = 16;
+    pattern2.bpm = 140.0f;
+    
+    song.patterns.push_back(pattern1);
+    song.patterns.push_back(pattern2);
+    
+    // Create arrangement
+    song.addPatternToArrangement(0);
+    song.addPatternToArrangement(1);
+    song.addPatternToArrangement(0);
+    
+    ASSERT(song.arrangement.size() == 3);
+    ASSERT(song.arrangement[0] == 0);
+    ASSERT(song.arrangement[1] == 1);
+    ASSERT(song.arrangement[2] == 0);
+}
+
+TEST(song_pattern_addition) {
+    Song song;
+    
+    SequencerPattern pattern;
+    pattern.numSteps = 16;
+    song.patterns.push_back(pattern);
+    
+    // Add to arrangement
+    song.addPatternToArrangement(0);
+    ASSERT(song.arrangement.size() == 1);
+    
+    // Add again
+    song.addPatternToArrangement(0);
+    ASSERT(song.arrangement.size() == 2);
+    
+    // Remove one
+    song.removePatternFromArrangement(0);
+    ASSERT(song.arrangement.size() == 1);
+}
+
+TEST(song_duration_calculation) {
+    Song song;
+    
+    // Create a 16-step pattern at 120 BPM
+    SequencerPattern pattern;
+    pattern.numSteps = 16;
+    pattern.bpm = 120.0f;
+    
+    song.patterns.push_back(pattern);
+    song.addPatternToArrangement(0);
+    
+    // 16 steps = 1 bar = 4 beats at 120 BPM = 2 seconds
+    float duration = song.getTotalDuration(120.0f);
+    ASSERT(duration > 0.0f);
+    
+    // Add another pattern
+    song.addPatternToArrangement(0);
+    float durationDouble = song.getTotalDuration(120.0f);
+    ASSERT(durationDouble > duration);
+}
+
+TEST(song_render) {
+    Presets::init();
+    Song song;
+    
+    // Create a simple pattern with kick and snare
+    SequencerPattern pattern;
+    pattern.numSteps = 16;
+    pattern.bpm = 120.0f;
+    pattern.steps[0].active = true;
+    pattern.steps[0].soundSlot = 0;  // Kick
+    pattern.steps[8].active = true;
+    pattern.steps[8].soundSlot = 1;  // Snare
+    
+    song.patterns.push_back(pattern);
+    song.addPatternToArrangement(0);
+    
+    // Create sound slots
+    std::vector<SynthParams> slots;
+    slots.push_back(Presets::laser());
+    slots.push_back(Presets::jump());
+    
+    // Render song
+    auto songBuffer = SongEngine::renderSong(song, slots);
+    ASSERT(songBuffer.size() > 0);
+    
+    // Check bounds
+    for (float sample : songBuffer) {
+        ASSERT(sample >= -1.1f && sample <= 1.1f);  // Slight margin for effects
+    }
+}
+
+TEST(song_export) {
+    Presets::init();
+    Song song;
+    song.name = "Test Song";
+    
+    // Create a pattern
+    SequencerPattern pattern;
+    pattern.numSteps = 16;
+    pattern.bpm = 120.0f;
+    pattern.steps[0].active = true;
+    pattern.steps[0].soundSlot = 0;
+    
+    song.patterns.push_back(pattern);
+    song.addPatternToArrangement(0);
+    
+    // Create sounds
+    std::vector<SynthParams> slots;
+    slots.push_back(Presets::laser());
+    
+    // Render and export
+    auto songBuffer = SongEngine::renderSong(song, slots);
+    auto intBuffer = SynthEngine::floatToInt16(songBuffer);
+    
+    bool success = WavExporter::exportWav("test_song_export.wav", intBuffer);
+    ASSERT(success);
+}
+
 int main() {
     std::cout << "\n🎵 8-Bit Synthesizer Test Suite\n" << std::endl;
     
@@ -692,6 +828,14 @@ int main() {
     RUN_TEST(effects_combined_delay_reverb);
     RUN_TEST(effects_disabled);
     RUN_TEST(effects_dry_wet_balance);
+    
+    std::cout << "\nSong Mode Tests:" << std::endl;
+    RUN_TEST(song_initialization);
+    RUN_TEST(song_arrangement);
+    RUN_TEST(song_pattern_addition);
+    RUN_TEST(song_duration_calculation);
+    RUN_TEST(song_render);
+    RUN_TEST(song_export);
     
     std::cout << "\n✅ All tests passed!" << std::endl;
     std::cout << "\nGenerated test files:" << std::endl;
