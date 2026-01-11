@@ -3,6 +3,7 @@
 #include "SynthParams.h"
 #include "Oscillator.h"
 #include "Envelope.h"
+#include "Effects.h"
 #include <vector>
 #include <cmath>
 
@@ -53,6 +54,10 @@ public:
             
             buffer[i] = sample;
         }
+        
+        // Apply effects processing
+        Effects::reset();
+        buffer = Effects::process(buffer, params.effects);
         
         return buffer;
     }

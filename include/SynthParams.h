@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include "FxParams.h"
 
 enum class Waveform {
     Square,
@@ -32,6 +33,9 @@ struct SynthParams {
     // Stretch features
     float vibratoFreq = 0.0f;   // Hz, 0 = off
     float vibratoDepth = 0.0f;  // 0-1
+    
+    // Effects
+    FxParams effects;
     
     std::string name = "Untitled";
 };

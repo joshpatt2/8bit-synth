@@ -23,6 +23,10 @@ public:
         p.release = 0.15f;
         p.duration = 0.3f;
         p.dutyCycle = 0.5f;
+        // Short delay for laser pew effect
+        p.effects.delayTime = 0.1f;
+        p.effects.delayFeedback = 0.3f;
+        p.effects.delayMix = 0.15f;
         return p;
     }
     
@@ -38,6 +42,9 @@ public:
         p.sustain = 0.1f;
         p.release = 0.4f;
         p.duration = 0.6f;
+        // Rich reverb for booming explosion
+        p.effects.reverbTime = 1.2f;
+        p.effects.reverbMix = 0.4f;
         return p;
     }
     

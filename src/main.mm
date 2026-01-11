@@ -112,6 +112,40 @@ public:
         
         ImGui::Separator();
         
+        // Effects
+        ImGui::Text("Effects");
+        
+        // Delay
+        if (ImGui::Checkbox("##delay_enable", &currentParams.effects.delayEnabled)) {
+            updateSelectedSlot();
+        }
+        ImGui::SameLine();
+        if (ImGui::SliderFloat("Delay Time", &currentParams.effects.delayTime, 0.0f, 1.0f, "%.2f s")) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("Delay Feedback", &currentParams.effects.delayFeedback, 0.0f, 0.9f, "%.2f")) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("Delay Mix", &currentParams.effects.delayMix, 0.0f, 1.0f, "%.2f")) {
+            updateSelectedSlot();
+        }
+        
+        ImGui::Separator();
+        
+        // Reverb
+        if (ImGui::Checkbox("##reverb_enable", &currentParams.effects.reverbEnabled)) {
+            updateSelectedSlot();
+        }
+        ImGui::SameLine();
+        if (ImGui::SliderFloat("Reverb Time", &currentParams.effects.reverbTime, 0.0f, 2.0f, "%.2f s")) {
+            updateSelectedSlot();
+        }
+        if (ImGui::SliderFloat("Reverb Mix", &currentParams.effects.reverbMix, 0.0f, 1.0f, "%.2f")) {
+            updateSelectedSlot();
+        }
+        
+        ImGui::Separator();
+        
         // Action buttons
         ImGui::Text("Actions");
         
