@@ -1,0 +1,449 @@
+#include <SDL2/SDL.h>
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdlrenderer2.h"
+
+#include "SynthParams.h"
+#include "SynthEngine.h"
+#include "AudioOutput.h"
+#include "WavExporter.h"
+#include "Presets.h"
+#include "Sequencer.h"
+
+#include <vector>
+#include <string>
+#include <chrono>
+
+class SynthApp {
+public:
+    SynthApp() {
+        Presets::init();
+        currentParams = Presets::laser();
+        
+        // Initialize sequencer sounds
+        setupSequencerSounds();
+        
+        lastStepTime = std::chrono::steady_clock::now();
+    }
+    
+    void renderUI() {
+        ImGui::Begin("8-Bit Synthesizer", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        
+        // Title
+        ImGui::Text("🎵 Retro Sound Effect Generator");
+        ImGui::Separator();
+        
+        // Waveform selection
+        ImGui::Text("Waveform");
+        const char* waveforms[] = { "Square", "Triangle", "Sawtooth", "Noise" };
+        int currentWaveform = static_cast<int>(currentParams.waveform);
+        if (ImGui::Combo("##waveform", &currentWaveform, waveforms, 4)) {
+            currentParams.waveform = static_cast<Waveform>(currentWaveform);
+        }
+        
+        // Duty cycle (for square wave)
+        if (currentParams.waveform == Waveform::Square) {
+            ImGui::SliderFloat("Duty Cycle", &currentParams.dutyCycle, 0.1f, 0.9f);
+        }
+        
+        ImGui::Separator();
+        
+        // Frequency controls
+        ImGui::Text("Frequency");
+        ImGui::SliderFloat("Start (Hz)", &currentParams.startFreq, 50.0f, 2000.0f);
+        ImGui::SliderFloat("End (Hz)", &currentParams.endFreq, 50.0f, 2000.0f);
+        ImGui::SliderFloat("Slide Speed", &currentParams.slideSpeed, 0.0f, 1.0f);
+        
+        ImGui::Separator();
+        
+        // Envelope controls
+        ImGui::Text("Envelope (ADSR)");
+        ImGui::SliderFloat("Attack", &currentParams.attack, 0.001f, 0.5f, "%.3f s");
+        ImGui::SliderFloat("Decay", &currentParams.decay, 0.01f, 1.0f, "%.3f s");
+        ImGui::SliderFloat("Sustain", &currentParams.sustain, 0.0f, 1.0f);
+        ImGui::SliderFloat("Release", &currentParams.release, 0.01f, 2.0f, "%.3f s");
+        
+        ImGui::Separator();
+        
+        // Duration
+        ImGui::SliderFloat("Duration", &currentParams.duration, 0.05f, 2.0f, "%.2f s");
+        
+        ImGui::Separator();
+        
+        // Vibrato (stretch feature)
+        ImGui::Text("Vibrato");
+        ImGui::SliderFloat("Vibrato Freq", &currentParams.vibratoFreq, 0.0f, 20.0f, "%.1f Hz");
+        if (currentParams.vibratoFreq > 0.0f) {
+            ImGui::SliderFloat("Vibrato Depth", &currentParams.vibratoDepth, 0.0f, 0.2f);
+        }
+        
+        ImGui::Separator();
+        
+        // Action buttons
+        ImGui::Text("Actions");
+        
+        if (ImGui::Button("▶ Play", ImVec2(100, 30))) {
+            playSound();
+        }
+        
+        ImGui::SameLine();
+        if (ImGui::Button("■ Stop", ImVec2(100, 30))) {
+            audioOutput.stop();
+        }
+        
+        ImGui::SameLine();
+        if (ImGui::Button("🎲 Randomize", ImVec2(120, 30))) {
+            currentParams = Presets::randomize();
+        }
+        
+        if (ImGui::Button("💾 Export WAV", ImVec2(120, 30))) {
+            exportWav();
+        }
+        
+        ImGui::Separator();
+        
+        // Presets
+        ImGui::Text("Presets");
+        
+        if (ImGui::Button("Laser", ImVec2(100, 0))) {
+            currentParams = Presets::laser();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Explosion", ImVec2(100, 0))) {
+            currentParams = Presets::explosion();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Pickup", ImVec2(100, 0))) {
+            currentParams = Presets::pickup();
+        }
+        
+        if (ImGui::Button("Jump", ImVec2(100, 0))) {
+            currentParams = Presets::jump();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Hurt", ImVec2(100, 0))) {
+            currentParams = Presets::hurt();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Powerup", ImVec2(100, 0))) {
+            currentParams = Presets::powerup();
+        }
+        
+        ImGui::Separator();
+        
+        // Status
+        if (audioOutput.isPlaying()) {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "● Playing...");
+        } else {
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "○ Ready");
+        }
+        
+        if (!lastExportPath.empty()) {
+            ImGui::Text("Last export: %s", lastExportPath.c_str());
+        }
+        
+        ImGui::End();
+    }
+    
+    void playSound() {
+        auto floatBuffer = SynthEngine::render(currentParams);
+        auto intBuffer = SynthEngine::floatToInt16(floatBuffer);
+        audioOutput.play(intBuffer);
+    }
+    
+    void exportWav() {
+        auto floatBuffer = SynthEngine::render(currentParams);
+        auto intBuffer = SynthEngine::floatToInt16(floatBuffer);
+        
+        // Generate filename with timestamp
+        time_t now = time(nullptr);
+        char filename[256];
+        snprintf(filename, sizeof(filename), "sfx_%ld.wav", now);
+        
+        if (WavExporter::exportWav(filename, intBuffer)) {
+            lastExportPath = filename;
+            SDL_Log("Exported: %s", filename);
+        } else {
+            SDL_Log("Export failed!");
+        }
+    }
+    
+    void setupSequencerSounds() {
+        // Kick
+        sequencer.slots[0].params = Presets::explosion();
+        sequencer.slots[0].params.duration = 0.15f;
+        sequencer.slots[0].params.startFreq = 120.0f;
+        sequencer.slots[0].params.endFreq = 40.0f;
+        sequencer.slots[0].name = "Kick";
+        
+        // Snare
+        sequencer.slots[1].params = Presets::explosion();
+        sequencer.slots[1].params.duration = 0.1f;
+        sequencer.slots[1].params.startFreq = 400.0f;
+        sequencer.slots[1].params.endFreq = 200.0f;
+        sequencer.slots[1].name = "Snare";
+        
+        // Hi-hat
+        sequencer.slots[2].params.waveform = Waveform::Noise;
+        sequencer.slots[2].params.duration = 0.05f;
+        sequencer.slots[2].params.attack = 0.001f;
+        sequencer.slots[2].params.release = 0.02f;
+        sequencer.slots[2].params.sustain = 0.3f;
+        sequencer.slots[2].name = "Hat";
+        
+        // Blip
+        sequencer.slots[3].params = Presets::pickup();
+        sequencer.slots[3].params.duration = 0.08f;
+        sequencer.slots[3].name = "Blip";
+    }
+    
+    void updateSequencer() {
+        if (!sequencer.isPlaying) return;
+        
+        auto now = std::chrono::steady_clock::now();
+        float elapsed = std::chrono::duration<float>(now - lastStepTime).count();
+        float stepDuration = sequencer.getStepDuration();
+        
+        if (elapsed >= stepDuration) {
+            lastStepTime = now;
+            
+            // Advance step
+            sequencer.currentStep++;
+            if (sequencer.currentStep >= sequencer.pattern.numSteps) {
+                if (sequencer.pattern.loop) {
+                    sequencer.currentStep = 0;
+                } else {
+                    sequencer.isPlaying = false;
+                    sequencer.currentStep = -1;
+                    return;
+                }
+            }
+            
+            // Trigger sounds for this step
+            auto& step = sequencer.pattern.steps[sequencer.currentStep];
+            if (step.active && step.soundSlot < static_cast<int>(sequencer.slots.size())) {
+                auto& slot = sequencer.slots[step.soundSlot];
+                if (slot.enabled) {
+                    auto floatBuffer = SynthEngine::render(slot.params);
+                    auto intBuffer = SynthEngine::floatToInt16(floatBuffer);
+                    audioOutput.play(intBuffer);
+                }
+            }
+        }
+    }
+    
+    void renderSequencerUI() {
+        ImGui::Begin("Sequencer", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        
+        ImGui::Text("🎹 Step Sequencer");
+        ImGui::Separator();
+        
+        // Transport controls
+        if (sequencer.isPlaying) {
+            if (ImGui::Button("■ Stop", ImVec2(100, 30))) {
+                sequencer.isPlaying = false;
+                sequencer.currentStep = -1;
+            }
+        } else {
+            if (ImGui::Button("▶ Play", ImVec2(100, 30))) {
+                sequencer.isPlaying = true;
+                sequencer.currentStep = -1;
+                lastStepTime = std::chrono::steady_clock::now();
+            }
+        }
+        
+        ImGui::SameLine();
+        ImGui::Checkbox("Loop", &sequencer.pattern.loop);
+        
+        // Tempo and pattern length
+        ImGui::SliderFloat("BPM", &sequencer.pattern.bpm, 60.0f, 200.0f, "%.0f");
+        
+        const char* patternLengths[] = { "1 Bar (16 steps)", "2 Bars (32 steps)" };
+        int currentLength = (sequencer.pattern.numSteps == 16) ? 0 : 1;
+        if (ImGui::Combo("Pattern Length", &currentLength, patternLengths, 2)) {
+            sequencer.pattern.numSteps = (currentLength == 0) ? 16 : 32;
+        }
+        
+        ImGui::Separator();
+        
+        // Step grid
+        ImGui::Text("Step Grid:");
+        
+        for (int slot = 0; slot < 4; slot++) {
+            ImGui::PushID(slot);
+            
+            ImGui::Text("%-6s", sequencer.slots[slot].name.c_str());
+            ImGui::SameLine();
+            
+            for (int step = 0; step < sequencer.pattern.numSteps; step++) {
+                if (step > 0 && step % 4 == 0) {
+                    ImGui::SameLine();
+                    ImGui::Text("|");
+                }
+                
+                ImGui::SameLine();
+                ImGui::PushID(step);
+                
+                auto& stepData = sequencer.pattern.steps[step];
+                bool isActive = stepData.active && stepData.soundSlot == slot;
+                bool isCurrent = (sequencer.currentStep == step && sequencer.isPlaying);
+                
+                if (isCurrent) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.8f, 0.2f, 1.0f));
+                }
+                
+                if (ImGui::SmallButton(isActive ? "●" : "○")) {
+                    if (isActive) {
+                        stepData.active = false;
+                    } else {
+                        stepData.active = true;
+                        stepData.soundSlot = slot;
+                    }
+                }
+                
+                if (isCurrent) {
+                    ImGui::PopStyleColor();
+                }
+                
+                ImGui::PopID();
+            }
+            
+            ImGui::PopID();
+            ImGui::NewLine();
+        }
+        
+        ImGui::Separator();
+        
+        // Clear pattern button
+        if (ImGui::Button("Clear Pattern")) {
+            for (auto& step : sequencer.pattern.steps) {
+                step.active = false;
+            }
+        }
+        
+        ImGui::SameLine();
+        if (ImGui::Button("Demo Pattern")) {
+            // Simple demo: kick on 1 and 9, snare on 5 and 13, hats on every other step
+            for (auto& step : sequencer.pattern.steps) {
+                step.active = false;
+            }
+            sequencer.pattern.steps[0].active = true; sequencer.pattern.steps[0].soundSlot = 0;  // Kick
+            sequencer.pattern.steps[8].active = true; sequencer.pattern.steps[8].soundSlot = 0;  // Kick
+            sequencer.pattern.steps[4].active = true; sequencer.pattern.steps[4].soundSlot = 1;  // Snare
+            sequencer.pattern.steps[12].active = true; sequencer.pattern.steps[12].soundSlot = 1; // Snare
+            for (int i = 0; i < 16; i += 2) {
+                sequencer.pattern.steps[i].active = true;
+                sequencer.pattern.steps[i].soundSlot = 2;  // Hat
+            }
+        }
+        
+        ImGui::End();
+    }
+    
+private:
+    SynthParams currentParams;
+    AudioOutput audioOutput;
+    std::string lastExportPath;
+    Sequencer sequencer;
+    std::chrono::steady_clock::time_point lastStepTime;
+};
+
+int main(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
+    
+    // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+        SDL_Log("SDL_Init Error: %s", SDL_GetError());
+        return 1;
+    }
+    
+    // Create window
+    SDL_Window* window = SDL_CreateWindow(
+        "8-Bit Synthesizer",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        800,
+        700,
+        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
+    );
+    
+    if (!window) {
+        SDL_Log("SDL_CreateWindow Error: %s", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+    
+    // Setup SDL Renderer
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+        SDL_Log("SDL_CreateRenderer Error: %s", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    
+    // Setup Dear ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    
+    // Setup style
+    ImGui::StyleColorsDark();
+    
+    // Setup Platform/Renderer backends
+    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer2_Init(renderer);
+    
+    // Create app
+    SynthApp app;
+    
+    // Main loop
+    bool running = true;
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+            
+            if (event.type == SDL_QUIT) {
+                running = false;
+            }
+            if (event.type == SDL_WINDOWEVENT && 
+                event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                running = false;
+            }
+        }
+        
+        // Start ImGui frame
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+        
+        // Update sequencer logic
+        app.updateSequencer();
+        
+        // Render our UI
+        app.renderUI();
+        app.renderSequencerUI();
+        
+        // Rendering
+        ImGui::Render();
+        SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
+        SDL_SetRenderDrawColor(renderer, 25, 25, 30, 255);
+        SDL_RenderClear(renderer);
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+        SDL_RenderPresent(renderer);
+    }
+    
+    // Cleanup
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+    
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    
+    return 0;
+}

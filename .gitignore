@@ -1,0 +1,24 @@
+# Build artifacts
+build/
+8bit-synth
+*.o
+*.a
+*.dylib
+*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+*.dSYM
+
+# Output files
+*.wav
+
+# External dependencies
+external/
