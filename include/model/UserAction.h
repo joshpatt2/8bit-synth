@@ -28,6 +28,7 @@ enum class UserActionType {
     // Sound control
     PlaySound,
     StopSound,
+    PreviewToggled,
     Randomize,
     Export,
     

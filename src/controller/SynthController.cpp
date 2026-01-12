@@ -15,6 +15,13 @@ void SynthController::handleAction(const UserAction& action) {
         case UserActionType::StopSound:
             stopSound();
             break;
+        case UserActionType::PreviewToggled:
+            if (action.intValue) {
+                startRealtimePreview();
+            } else {
+                stopRealtimePreview();
+            }
+            break;
         case UserActionType::Export:
             exportToWav(action.filepath);
             break;

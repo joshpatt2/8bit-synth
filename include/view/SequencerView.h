@@ -14,7 +14,9 @@ public:
     SequencerView() = default;
     
     /// Render sequencer UI and return any user actions
-    std::vector<UserAction> render(const SequencerState& state);
+    /// @param state Current sequencer state
+    /// @param embedded If true, renders without window wrapper for use in parent containers
+    std::vector<UserAction> render(const SequencerState& state, bool embedded = false);
     
     /// Select a step for highlighting
     void setSelectedStep(int step) { selectedStep = step; }

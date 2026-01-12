@@ -1,34 +1,56 @@
 #include "view/SongView.h"
+#include "view/SynthTheme.h"
 #include "imgui.h"
 
-std::vector<UserAction> SongView::render(const SongState& state) {
+std::vector<UserAction> SongView::render(const SongState& state, bool embedded) {
     std::vector<UserAction> actions;
     
-    ImGui::Begin("Song Composer", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    if (!embedded) {
+        ImGui::Begin("Song Composer", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    }
     
-    ImGui::Text("🎼 Song Mode");
-    ImGui::Separator();
+    SectionHeader("SONG COMPOSER");
     
     // Song name input
-    ImGui::InputText("Song Name", songNameBuffer, sizeof(songNameBuffer));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.545f, 0.545f, 0.545f, 1.00f));
+    ImGui::Text("Song Name:");
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(200);
+    ImGui::InputText("##SongName", songNameBuffer, sizeof(songNameBuffer));
     
-    ImGui::Separator();
-    ImGui::Text("Patterns in Library: %zu", state.patterns.size());
+    ImGui::Spacing();
+    
+    // Pattern library info
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.545f, 0.545f, 0.545f, 1.00f));
+    ImGui::Text("Patterns in Library:");
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    ImGui::Text("%zu", state.patterns.size());
     
     if (state.patterns.empty()) {
-        ImGui::TextColored(ImVec4(0.8f, 0.5f, 0.3f, 1.0f), "No patterns yet - create one in sequencer");
+        ImGui::Spacing();
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.914f, 0.271f, 0.376f, 0.80f));
+        ImGui::Text("No patterns yet - create one in sequencer");
+        ImGui::PopStyleColor();
     }
     
-    ImGui::Separator();
+    ImGui::Spacing();
     
-    // Song info
-    ImGui::Text("Song: %s", state.name.c_str());
+    // Song status
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.545f, 0.545f, 0.545f, 1.00f));
+    ImGui::Text("Current Song:");
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    ImGui::Text("%s", state.name.c_str());
     if (state.modified) {
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "*");
+        ImGui::TextColored(ImVec4(0.914f, 0.271f, 0.376f, 1.0f), "*");
     }
     
-    ImGui::End();
+    if (!embedded) {
+        ImGui::End();
+    }
     
     return actions;
 }

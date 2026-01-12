@@ -45,6 +45,13 @@ add_custom_command(TARGET 8bit-synth POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:8bit-synth> ${CMAKE_CURRENT_SOURCE_DIR}/
 )
 
+# Copy assets to build directory
+add_custom_command(TARGET 8bit-synth POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+    ${CMAKE_CURRENT_SOURCE_DIR}/assets 
+    ${CMAKE_CURRENT_BINARY_DIR}/assets
+)
+
 # Test executable
 add_executable(test_synth
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_synth.cpp
