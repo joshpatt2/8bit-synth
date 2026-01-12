@@ -7,9 +7,6 @@ std::vector<UserAction> SequencerView::render(const SequencerState& state) {
     
     ImGui::Begin("Sequencer", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     
-    ImGui::Text("🎹 Step Sequencer");
-    ImGui::Separator();
-    
     // Transport controls
     if (state.isPlaying) {
         if (ImGui::Button("■ Stop", ImVec2(100, 30))) {
@@ -139,6 +136,11 @@ std::vector<UserAction> SequencerView::render(const SequencerState& state) {
     // Randomization controls
     ImGui::Text("Randomize Pattern:");
     
+    // Density slider for controlled randomization
+    if (ImGui::SliderInt("Density##randomize", &densityValue, 0, 100, "%d%%")) {
+        // Update density value for density-based randomizations
+    }
+    
     if (ImGui::Button("All Notes (50%)", ImVec2(120, 0))) {
         UserAction action;
         action.type = UserActionType::SequencerRandomizeAll;
@@ -166,6 +168,15 @@ std::vector<UserAction> SequencerView::render(const SequencerState& state) {
     if (ImGui::Button("Random Slots", ImVec2(120, 0))) {
         UserAction action;
         action.type = UserActionType::SequencerRandomizeSlots;
+        actions.push_back(action);
+    }
+    
+    // Density-based randomization
+    ImGui::SameLine();
+    if (ImGui::Button("Set Density", ImVec2(100, 0))) {
+        UserAction action;
+        action.type = UserActionType::SequencerRandomizeDensity;
+        action.intValue = densityValue;
         actions.push_back(action);
     }
     

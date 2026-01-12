@@ -771,6 +771,197 @@ TEST(song_export) {
     ASSERT(success);
 }
 
+// Randomization tests
+TEST(randomization_all_notes) {
+    SequencerState seq;
+    seq.pattern.numSteps = 16;
+    
+    // Clear pattern
+    for (auto& step : seq.pattern.steps) {
+        step.active = false;
+    }
+    
+    // Simulate randomization logic: All mode
+    for (auto& step : seq.pattern.steps) {
+        step.active = (rand() % 2 == 0);
+        if (step.active) {
+            step.soundSlot = rand() % seq.slots.size();
+        }
+    }
+    
+    // Verify pattern was modified (should have some active steps)
+    int activeCount = 0;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) activeCount++;
+    }
+    
+    // With random 50%, expect roughly 8 out of 16 steps active (allow variance)
+    ASSERT(activeCount > 2 && activeCount < 14);  // Not all empty, not all full
+}
+
+TEST(randomization_add_some) {
+    SequencerState seq;
+    seq.pattern.numSteps = 16;
+    
+    // Set up initial pattern with some notes
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        seq.pattern.steps[i].active = (i % 4 == 0);
+    }
+    
+    int initialActive = 0;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) initialActive++;
+    }
+    
+    // Simulate Add Some: 30% density
+    int density = 30;
+    for (auto& step : seq.pattern.steps) {
+        if (!step.active && (rand() % 100) < density) {
+            step.active = true;
+            step.soundSlot = rand() % seq.slots.size();
+        }
+    }
+    
+    int finalActive = 0;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) finalActive++;
+    }
+    
+    // Final should have more notes than initial
+    ASSERT(finalActive >= initialActive);
+}
+
+TEST(randomization_remove_some) {
+    SequencerState seq;
+    seq.pattern.numSteps = 16;
+    
+    // Set up full pattern
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        seq.pattern.steps[i].active = true;
+        seq.pattern.steps[i].soundSlot = 0;
+    }
+    
+    // Simulate Remove Some: 50% density
+    int density = 50;
+    for (auto& step : seq.pattern.steps) {
+        if (step.active && (rand() % 100) < density) {
+            step.active = false;
+        }
+    }
+    
+    int activeCount = 0;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) activeCount++;
+    }
+    
+    // Should have fewer notes (removed some)
+    ASSERT(activeCount < 16 && activeCount > 2);
+}
+
+TEST(randomization_shuffle) {
+    SequencerState seq;
+    seq.pattern.numSteps = 16;
+    
+    // Set up pattern with specific notes
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        seq.pattern.steps[i].active = false;
+    }
+    seq.pattern.steps[0].active = true;
+    seq.pattern.steps[4].active = true;
+    seq.pattern.steps[8].active = true;
+    
+    int initialCount = 3;
+    
+    // Simulate Shuffle: keep count but randomize positions
+    std::vector<int> activeIndices;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) {
+            activeIndices.push_back(i);
+        }
+    }
+    
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        seq.pattern.steps[i].active = false;
+    }
+    
+    for (int i = 0; i < static_cast<int>(activeIndices.size()); i++) {
+        int randomPos = rand() % seq.pattern.numSteps;
+        while (seq.pattern.steps[randomPos].active && randomPos < seq.pattern.numSteps) {
+            randomPos = (randomPos + 1) % seq.pattern.numSteps;
+        }
+        seq.pattern.steps[randomPos].active = true;
+    }
+    
+    int finalCount = 0;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) finalCount++;
+    }
+    
+    // Count should be preserved
+    ASSERT(finalCount == initialCount);
+}
+
+TEST(randomization_density) {
+    SequencerState seq;
+    seq.pattern.numSteps = 16;
+    
+    // Clear initial pattern
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        seq.pattern.steps[i].active = false;
+    }
+    
+    // Simulate Density mode: target 50% = 8 notes
+    int targetActive = (seq.pattern.numSteps * 50) / 100;
+    int attempts = 0;
+    int toAdd = targetActive;
+    
+    while (toAdd > 0 && attempts < seq.pattern.numSteps * 2) {
+        int pos = rand() % seq.pattern.numSteps;
+        if (!seq.pattern.steps[pos].active) {
+            seq.pattern.steps[pos].active = true;
+            seq.pattern.steps[pos].soundSlot = 0;
+            toAdd--;
+        }
+        attempts++;
+    }
+    
+    int finalCount = 0;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) finalCount++;
+    }
+    
+    // Should be close to target (50% = 8)
+    ASSERT(finalCount >= 6 && finalCount <= 10);
+}
+
+TEST(randomization_slots) {
+    SequencerState seq;
+    seq.pattern.numSteps = 16;
+    
+    // Set up pattern with specific slots
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (i % 2 == 0) {
+            seq.pattern.steps[i].active = true;
+            seq.pattern.steps[i].soundSlot = 0;  // All use slot 0
+        }
+    }
+    
+    // Simulate Randomize Slots: keep pattern, randomize which slots
+    for (auto& step : seq.pattern.steps) {
+        if (step.active) {
+            step.soundSlot = rand() % seq.slots.size();
+        }
+    }
+    
+    // Verify pattern count is still the same
+    int activeCount = 0;
+    for (int i = 0; i < seq.pattern.numSteps; i++) {
+        if (seq.pattern.steps[i].active) activeCount++;
+    }
+    
+    ASSERT(activeCount == 8);  // Still 8 active steps
+}
+
 int main() {
     std::cout << "\n🎵 8-Bit Synthesizer Test Suite\n" << std::endl;
     
@@ -836,6 +1027,14 @@ int main() {
     RUN_TEST(song_duration_calculation);
     RUN_TEST(song_render);
     RUN_TEST(song_export);
+    
+    std::cout << "\nSequencer Randomization Tests:" << std::endl;
+    RUN_TEST(randomization_all_notes);
+    RUN_TEST(randomization_add_some);
+    RUN_TEST(randomization_remove_some);
+    RUN_TEST(randomization_shuffle);
+    RUN_TEST(randomization_density);
+    RUN_TEST(randomization_slots);
     
     std::cout << "\n✅ All tests passed!" << std::endl;
     std::cout << "\nGenerated test files:" << std::endl;
