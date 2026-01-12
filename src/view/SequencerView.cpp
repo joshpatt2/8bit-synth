@@ -134,6 +134,41 @@ std::vector<UserAction> SequencerView::render(const SequencerState& state) {
         actions.push_back(action);
     }
     
+    ImGui::Separator();
+    
+    // Randomization controls
+    ImGui::Text("Randomize Pattern:");
+    
+    if (ImGui::Button("All Notes (50%)", ImVec2(120, 0))) {
+        UserAction action;
+        action.type = UserActionType::SequencerRandomizeAll;
+        actions.push_back(action);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Add Some (+30%)", ImVec2(120, 0))) {
+        UserAction action;
+        action.type = UserActionType::SequencerRandomizeSome;
+        actions.push_back(action);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Remove Some (-50%)", ImVec2(120, 0))) {
+        UserAction action;
+        action.type = UserActionType::SequencerRandomizeRemove;
+        actions.push_back(action);
+    }
+    
+    if (ImGui::Button("Shuffle", ImVec2(120, 0))) {
+        UserAction action;
+        action.type = UserActionType::SequencerRandomizeShuffle;
+        actions.push_back(action);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Random Slots", ImVec2(120, 0))) {
+        UserAction action;
+        action.type = UserActionType::SequencerRandomizeSlots;
+        actions.push_back(action);
+    }
+    
     ImGui::End();
     
     return actions;

@@ -55,6 +55,19 @@ public:
     
     SynthParams& getSelectedSlotParamsMutable();
     
+    /// Randomization modes
+    enum class RandomizeMode {
+        All,           // Randomly toggle every step
+        Some,          // Add notes to ~30% of empty steps
+        Remove,        // Remove notes from ~50% of active steps
+        Shuffle,       // Shuffle active steps randomly
+        Density,       // Increase density (add notes to existing pattern)
+        Slots          // Randomize which sound slot plays (keep pattern structure)
+    };
+    
+    /// Randomize pattern with specified mode
+    void randomizePattern(RandomizeMode mode, int density = 50);
+    
 private:
     SequencerState sequencerState;
     AudioOutput audioOutput;
