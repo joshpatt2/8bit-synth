@@ -154,7 +154,3 @@ private:
     static Reverb reverbProcessor;
     static Delay delayProcessor;
 };
-
-// Static member definitions
-Reverb Effects::reverbProcessor;
-Delay Effects::delayProcessor;

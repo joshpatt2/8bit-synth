@@ -27,6 +27,8 @@ include_directories(
 file(GLOB SOURCES 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.mm
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/controller/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/view/*.cpp
 )
 
 add_executable(8bit-synth 
@@ -46,6 +48,7 @@ add_custom_command(TARGET 8bit-synth POST_BUILD
 # Test executable
 add_executable(test_synth
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_synth.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Effects.cpp
 )
 
 target_include_directories(test_synth PRIVATE
