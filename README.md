@@ -14,6 +14,7 @@ A retro sound synthesizer and step sequencer for creating authentic 8-bit game a
 - **Frequency Sweeps**: Configurable pitch slides with slide speed
 - **Vibrato**: Adjustable pitch modulation
 - **Duty Cycle**: Control square wave timbre
+- **Built-in Effects**: Reverb and Delay with mix controls
 
 ### Step Sequencer
 - **Pattern Sequencer**: 1 or 2 bar patterns (16/32 steps)
@@ -22,11 +23,18 @@ A retro sound synthesizer and step sequencer for creating authentic 8-bit game a
 - **Loop Mode**: Continuous pattern playback
 - **Real-time Editing**: Click to activate/deactivate steps while playing
 
+### Pattern Library
+- **Save Patterns**: Persist synth + sequencer state as JSON files
+- **Load Patterns**: Restore complete sound and pattern setup
+- **Pattern Management**: Browse, select, and delete saved patterns
+- **Auto-Directory**: Patterns stored in ~/Documents/8bit-synth/patterns/
+- **3 Example Patterns**: BrentSignature, ClassicGame, DubBeat
+
 ### Audio Engine
-- **Real-time Preview**: Instant playback through SDL2
+- **Real-time Preview**: Live audio synthesis with sub-10ms latency (opt-in toggle)
+- **Continuous Synthesis**: Smooth audio output while tweaking parameters
 - **WAV Export**: 44100Hz, 16-bit, mono format
 - **6 Built-in Presets**: Laser, Explosion, Pickup, Jump, Hurt, Powerup
-- **Randomizer**: Generate random retro sounds for inspiration
 
 ## Screenshots
 
@@ -66,7 +74,7 @@ cd 8bit-synth
 1. Launch the application
 2. Select a waveform from the dropdown
 3. Adjust frequency, envelope, and duration sliders
-4. Click **▶ Play** to preview
+4. Click **🔊 Preview ON/OFF** to toggle real-time audio
 5. Click **💾 Export WAV** to save
 
 **Or** click a preset button (Laser, Explosion, etc.) for instant results.
@@ -79,6 +87,15 @@ cd 8bit-synth
 4. Click circles (○) in the grid to activate steps (●)
 5. Adjust **BPM** to change tempo
 6. Toggle **Loop** for continuous playback
+
+### Saving and Loading Patterns
+
+1. Create your synth sound and sequencer pattern
+2. Click **💾 Save Pattern** in the Song Composer
+3. Enter a pattern name (e.g., "MyKick" or "GameBeat")
+4. Pattern is saved to ~/Documents/8bit-synth/patterns/
+5. Click **📂 Load Pattern** to restore previously saved patterns
+6. Select a pattern and click **Load** to apply it
 
 ## Documentation
 
@@ -104,21 +121,39 @@ Tests cover:
 ## Technical Details
 
 - **Language**: C++17
-- **GUI**: Dear ImGui
-- **Audio**: SDL2
+- **GUI**: Dear ImGui (SDL2 renderer backend)
+- **Audio**: SDL2 (real-time synthesis with lock-free ring buffers)
+- **Serialization**: nlohmann/json (pattern persistence)
 - **Sample Rate**: 44100 Hz
 - **Bit Depth**: 16-bit PCM
-- **Architecture**: Header-only synthesis engine, SDL renderer backend
+- **Architecture**: Clean MVC (Model-View-Controller)
+  - **Model**: Pure data structures (SynthParams, SequencerState, PatternFile)
+  - **View**: ImGui UI components (SynthView, SequencerView, SongView)
+  - **Controller**: Business logic (SynthController, SequencerController, SongController)
 
 ## Project Structure
 
 ```
 8bit-synth/
-├── include/           # Synthesis engine headers
-├── src/              # Application and GUI
-├── tests/            # Test suite
-├── build/            # Build directory
-└── external/         # ImGui (downloaded via setup script)
+├── include/
+│   ├── model/               # Pure data structures
+│   ├── controller/          # Business logic
+│   ├── view/                # UI rendering
+│   ├── SynthEngine.h        # Synthesis core
+│   ├── RealTimeAudio.h      # Real-time audio engine
+│   ├── PatternSerializer.h  # JSON pattern I/O
+│   └── ...
+├── src/
+│   ├── controller/          # Controller implementations
+│   ├── view/                # View implementations
+│   ├── RealTimeAudio.cpp
+│   ├── PatternSerializer.cpp
+│   ├── main.mm              # Application entry point
+│   └── ...
+├── patterns/                # Shipped example patterns
+├── tests/                   # Test suite
+├── build/                   # Build directory
+└── external/                # ImGui and dependencies
 ```
 
 ## License
