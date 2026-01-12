@@ -43,12 +43,6 @@ enum class UserActionType {
     SequencerSlotSelected,
     SequencerSlotNameChanged,
     SequencerClear,
-    SequencerRandomizeAll,
-    SequencerRandomizeSome,
-    SequencerRandomizeRemove,
-    SequencerRandomizeShuffle,
-    SequencerRandomizeDensity,
-    SequencerRandomizeSlots,
     
     // Song management
     SaveSong,

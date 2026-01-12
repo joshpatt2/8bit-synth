@@ -23,5 +23,4 @@ public:
     
 private:
     int selectedStep = -1;
-    int densityValue = 50;  // 0-100, default 50%
 };

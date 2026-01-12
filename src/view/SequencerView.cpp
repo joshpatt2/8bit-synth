@@ -131,55 +131,6 @@ std::vector<UserAction> SequencerView::render(const SequencerState& state) {
         actions.push_back(action);
     }
     
-    ImGui::Separator();
-    
-    // Randomization controls
-    ImGui::Text("Randomize Pattern:");
-    
-    // Density slider for controlled randomization
-    if (ImGui::SliderInt("Density##randomize", &densityValue, 0, 100, "%d%%")) {
-        // Update density value for density-based randomizations
-    }
-    
-    if (ImGui::Button("All Notes (50%)", ImVec2(120, 0))) {
-        UserAction action;
-        action.type = UserActionType::SequencerRandomizeAll;
-        actions.push_back(action);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Add Some (+30%)", ImVec2(120, 0))) {
-        UserAction action;
-        action.type = UserActionType::SequencerRandomizeSome;
-        actions.push_back(action);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Remove Some (-50%)", ImVec2(120, 0))) {
-        UserAction action;
-        action.type = UserActionType::SequencerRandomizeRemove;
-        actions.push_back(action);
-    }
-    
-    if (ImGui::Button("Shuffle", ImVec2(120, 0))) {
-        UserAction action;
-        action.type = UserActionType::SequencerRandomizeShuffle;
-        actions.push_back(action);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Random Slots", ImVec2(120, 0))) {
-        UserAction action;
-        action.type = UserActionType::SequencerRandomizeSlots;
-        actions.push_back(action);
-    }
-    
-    // Density-based randomization
-    ImGui::SameLine();
-    if (ImGui::Button("Set Density", ImVec2(100, 0))) {
-        UserAction action;
-        action.type = UserActionType::SequencerRandomizeDensity;
-        action.intValue = densityValue;
-        actions.push_back(action);
-    }
-    
     ImGui::End();
     
     return actions;
