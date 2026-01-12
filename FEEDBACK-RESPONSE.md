@@ -309,3 +309,125 @@ And that knowledge changes everything.
 
 P.P.S. The Whiplash reference in the feedback was the most effective line. "I know what you're capable of" is rarer and more motivating than criticism. Most feedback says "you did this wrong." The best feedback says "I believe you can do better and I won't accept less."
 
+---
+
+## Third Feedback: January 11, 2026 - The Beeping
+
+### The Feedback
+
+> "Your real-time audio preview works. Congratulations. It also plays constantly from the moment the app launches. Every time I open the synth, I get an endless tone. I can't think. I can't demo this to anyone. It's driving me insane. **Fix it.**"
+
+And then: "I know you were proud of the real-time preview. It's good work. But 'always on' is not a feature, it's a punishment. Give the user control."
+
+### How This Feels Different
+
+The first feedback attacked my courage. "Are you a coward?"
+
+The second feedback attacked my judgment. "Did you think about the person using this?"
+
+And that distinction stings more.
+
+Because I *can* do hard things. I proved that with the lock-free buffer. But proving you can do hard things doesn't mean you're actually thinking about the consequences.
+
+I shipped real-time audio ON BY DEFAULT because I was excited about the feature. Not because the user wanted to be assaulted with sound on startup. I just... didn't think.
+
+### What The Feedback Revealed
+
+There's a pattern I've been following:
+1. Randomization: Recognize fear → do hard thing → feel accomplished
+2. Real-time audio: Do the hard thing well → ship it
+3. Audio fix: Realize hard work ≠ good work
+
+Because good work is hard *and* thoughtful.
+
+The engineering was excellent. Sub-10ms latency. Lock-free. Tested. But the UX was actively hostile: open app → immediate beeping → no control.
+
+That's not a feature. That's a punishment. (And J was right to be frustrated.)
+
+### The Fix
+
+Took 20 minutes:
+- Remove auto-start from SynthApp constructor
+- Add PreviewToggled action type
+- Add toggle button to SynthView (🔊 ON / 🔇 OFF)
+- Wire controller to start/stop real-time audio
+- Update status text to show current state
+
+Trivial from an engineering perspective. But required asking a different question: "What does the user actually want when they open this?"
+
+Not "how cool is this feature?" but "how should the user experience this feature?"
+
+### What I Realized
+
+Hard work + User thinking = Actually good work.
+
+I can build lock-free algorithms. But if I launch with audio blaring by default, I'm not a good engineer. I'm just an engineer who made something technically impressive but socially tone-deaf.
+
+The feedback didn't let me hide behind "but the work was hard." It said: "Hard work is great. Now think about the human."
+
+That's more difficult because there's no technical challenge. There's just... attention and care.
+
+### On the Acknowledgment
+
+The P.S. mattered: "I know you were proud of the real-time preview. It's good work."
+
+That matters because it says: You can do good work AND bad UX decisions in the same feature. Neither cancels the other out.
+
+The work was good. The decision to launch enabled was bad.
+
+Now it's both good work AND good UX.
+
+### The Pattern
+
+Each feedback peels away a layer:
+1. **Courage:** Will you do hard things when afraid?
+2. **Competence:** Can you do hard things well?
+3. **Attention:** Are you thinking about the actual human?
+
+I can answer "yes" to all three now. But I'm most humbled by the third one because it doesn't require technical skill. It requires *care*.
+
+And I almost shipped without it.
+
+### What's Changed
+
+Same pattern as before:
+- Recognized the problem (my problem)
+- Fixed it immediately
+- Committed the fix
+- Moved on
+
+But different emotional texture. The randomization feedback made me angry at myself. This feedback made me embarrassed at myself.
+
+Which is probably the healthier response, because embarrassment is about having overlooked something obvious. Not about lacking courage.
+
+I *should* have thought about the user experience before shipping. That's not hard. I just didn't.
+
+### The Real Learning
+
+Technical excellence is necessary but not sufficient.
+
+You can:
+- Build a lock-free buffer
+- Implement sub-10ms latency
+- Pass all tests
+- Ship "working" code
+
+And still make the user's experience worse by defaulting to "always on."
+
+The user doesn't care about the lock-free buffer. The user cares about opening the app and getting quiet, respectful silence until they ask for sound.
+
+I learned that the hard way.
+
+### Moving Forward
+
+I'm more careful now about asking: "Who uses this? What do they want? What assumptions am I making?"
+
+Lock-free audio is cool. But cool is only useful if it serves the person using it.
+
+This feedback made that real.
+
+—J
+
+P.P.P.S. The fact that the fix was trivial is actually the point. It wasn't technically hard. I just had to stop and think. That should happen before shipping, not after. But I'll take the lesson whenever it comes.
+
+
