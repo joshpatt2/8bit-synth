@@ -1,0 +1,57 @@
+{
+  "name": "ClassicGame",
+  "version": "1.0",
+  "createdAt": "2026-01-11T09:30:00",
+  "author": "Developer",
+  "synth": {
+    "waveform": 1,
+    "dutyCycle": 0.25,
+    "startFreq": 800.0,
+    "endFreq": 400.0,
+    "slideSpeed": 0.1,
+    "attack": 0.005,
+    "decay": 0.15,
+    "sustain": 0.5,
+    "release": 0.2,
+    "duration": 0.3,
+    "vibratoFreq": 5.0,
+    "vibratoDepth": 10.0
+  },
+  "effects": {
+    "reverbTime": 0.5,
+    "reverbMix": 0.3,
+    "reverbEnabled": false,
+    "delayTime": 0.3,
+    "delayFeedback": 0.4,
+    "delayMix": 0.1,
+    "delayEnabled": false
+  },
+  "sequencer": {
+    "bpm": 160.0,
+    "numSteps": 16,
+    "stepsData": [
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 1},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 1},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 2},
+      {"active": true, "soundSlot": 1},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 1}
+    ],
+    "slots": [
+      {"name": "Kick", "enabled": true},
+      {"name": "Snare", "enabled": true},
+      {"name": "Hat", "enabled": true},
+      {"name": "Blip", "enabled": true}
+    ]
+  }
+}

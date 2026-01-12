@@ -1,0 +1,57 @@
+{
+  "name": "DubBeat",
+  "version": "1.0",
+  "createdAt": "2026-01-11T09:00:00",
+  "author": "Developer",
+  "synth": {
+    "waveform": 2,
+    "dutyCycle": 0.5,
+    "startFreq": 60.0,
+    "endFreq": 40.0,
+    "slideSpeed": 0.05,
+    "attack": 0.02,
+    "decay": 0.3,
+    "sustain": 0.4,
+    "release": 0.25,
+    "duration": 0.8,
+    "vibratoFreq": 0.0,
+    "vibratoDepth": 0.0
+  },
+  "effects": {
+    "reverbTime": 1.0,
+    "reverbMix": 0.3,
+    "reverbEnabled": true,
+    "delayTime": 0.3,
+    "delayFeedback": 0.4,
+    "delayMix": 0.2,
+    "delayEnabled": true
+  },
+  "sequencer": {
+    "bpm": 90.0,
+    "numSteps": 16,
+    "stepsData": [
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 1},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 1},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 2},
+      {"active": false, "soundSlot": 0}
+    ],
+    "slots": [
+      {"name": "Kick", "enabled": true},
+      {"name": "Snare", "enabled": true},
+      {"name": "Hat", "enabled": true},
+      {"name": "Blip", "enabled": true}
+    ]
+  }
+}

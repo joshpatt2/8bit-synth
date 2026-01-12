@@ -26,6 +26,9 @@ public:
     /// Get mutable sequencer state for editing
     SequencerState& getStateMutable() { return sequencerState; }
     
+    /// Set entire sequencer state (used when loading patterns)
+    void setState(const SequencerState& newState) { sequencerState = newState; }
+    
     /// Check if sequencer is currently playing
     bool isPlaying() const { return sequencerState.isPlaying; }
     

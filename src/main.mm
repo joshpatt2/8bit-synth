@@ -101,7 +101,23 @@ public:
             {
                 auto songActions = renderSongSection(songController.getState());
                 for (const auto& action : songActions) {
-                    songController.handleAction(action);
+                    if (action.type == UserActionType::SavePattern) {
+                        // Get current synth and sequencer state and save pattern
+                        songController.savePattern(action.stringValue, 
+                                                  synthController.getParams(),
+                                                  sequencerController.getState());
+                    } else if (action.type == UserActionType::LoadPattern) {
+                        // Load pattern and update synth and sequencer
+                        SynthParams newSynthParams;
+                        SequencerState newSequencerState;
+                        
+                        if (songController.loadPattern(action.filepath, newSynthParams, newSequencerState)) {
+                            synthController.getParamsMutable() = newSynthParams;
+                            sequencerController.setState(newSequencerState);
+                        }
+                    } else {
+                        songController.handleAction(action);
+                    }
                 }
             }
             ImGui::EndChild();
@@ -127,6 +143,8 @@ private:
     
     /// Render song section (embedded)
     std::vector<UserAction> renderSongSection(const SongState& state) {
+        // Update pattern list before rendering
+        songView.setAvailablePatterns(songController.getAvailablePatterns());
         return songView.render(state, true);  // embedded = true
     }
     

@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 
+# Fetch nlohmann/json
+include(FetchContent)
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
 # Find SDL2
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
@@ -38,6 +43,7 @@ add_executable(8bit-synth
 
 target_link_libraries(8bit-synth 
     ${SDL2_LIBRARIES}
+    nlohmann_json::nlohmann_json
 )
 
 # Copy build to root for easy access

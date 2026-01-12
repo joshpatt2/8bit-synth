@@ -5,6 +5,8 @@
 
 #include "model/SynthModel.h"
 #include "model/UserAction.h"
+#include "model/PatternFile.h"
+#include "PatternSerializer.h"
 
 /// Controller for song composition and management.
 /// Handles pattern library, song arrangement, and song export.
@@ -42,6 +44,21 @@ public:
     /// Create new song
     void newSong();
     
+    /// Save current synth and sequencer state as a pattern
+    bool savePattern(const std::string& patternName, const SynthParams& synthParams, 
+                     const SequencerState& sequencerState);
+    
+    /// Load pattern and apply to synth and sequencer
+    bool loadPattern(const std::string& patternPath, SynthParams& synthParams, 
+                     SequencerState& sequencerState);
+    
+    /// Delete pattern file
+    bool deletePattern(const std::string& patternPath);
+    
+    /// Get list of available patterns
+    std::vector<PatternFile> getAvailablePatterns() const;
+    
 private:
     SongState songState;
+    PatternSerializer patternSerializer;
 };

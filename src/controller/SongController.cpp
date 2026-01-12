@@ -2,6 +2,10 @@
 #include "SongEngine.h"
 #include "WavExporter.h"
 #include "SynthEngine.h"
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <cctype>
 
 SongController::SongController() {
     songState.name = "Untitled Song";
@@ -17,6 +21,17 @@ void SongController::handleAction(const UserAction& action) {
             break;
         case UserActionType::NewSong:
             newSong();
+            break;
+        case UserActionType::SavePattern:
+            // Note: Save pattern requires synth and sequencer state from other controllers
+            // This is handled in SongView
+            break;
+        case UserActionType::LoadPattern:
+            // Note: Load pattern requires synth and sequencer state from other controllers
+            // This is handled in SongView
+            break;
+        case UserActionType::DeletePattern:
+            deletePattern(action.filepath);
             break;
         default:
             break;
@@ -60,4 +75,55 @@ void SongController::newSong() {
     songState = SongState();
     songState.name = "Untitled Song";
     songState.modified = false;
+}
+bool SongController::savePattern(const std::string& patternName, const SynthParams& synthParams,
+                                 const SequencerState& sequencerState) {
+    // Create pattern file with current timestamp
+    PatternFile pattern;
+    pattern.name = patternName;
+    pattern.version = "1.0";
+    pattern.author = "User";
+    pattern.synthParams = synthParams;
+    pattern.sequencerState = sequencerState;
+    
+    // Generate ISO 8601 timestamp
+    auto now = std::time(nullptr);
+    auto tm = std::localtime(&now);
+    char buf[32];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", tm);
+    pattern.createdAt = std::string(buf);
+    
+    // Generate filepath
+    std::string dir = patternSerializer.ensurePatternsDirectory();
+    // Replace spaces and special chars with underscores for filename
+    std::string safeName = patternName;
+    for (auto& c : safeName) {
+        if (!std::isalnum(c) && c != '-' && c != '_') {
+            c = '_';
+        }
+    }
+    std::string filepath = dir + "/" + safeName + ".8bp";
+    
+    return patternSerializer.savePattern(pattern, filepath);
+}
+
+bool SongController::loadPattern(const std::string& patternPath, SynthParams& synthParams,
+                                 SequencerState& sequencerState) {
+    PatternFile pattern = patternSerializer.loadPattern(patternPath);
+    
+    if (pattern.name.empty()) {
+        return false;
+    }
+    
+    synthParams = pattern.synthParams;
+    sequencerState = pattern.sequencerState;
+    return true;
+}
+
+bool SongController::deletePattern(const std::string& patternPath) {
+    return patternSerializer.deletePattern(patternPath);
+}
+
+std::vector<PatternFile> SongController::getAvailablePatterns() const {
+    return patternSerializer.listPatterns();
 }

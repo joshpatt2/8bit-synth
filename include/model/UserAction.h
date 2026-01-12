@@ -49,6 +49,11 @@ enum class UserActionType {
     SaveSong,
     LoadSong,
     NewSong,
+    
+    // Pattern library
+    SavePattern,
+    LoadPattern,
+    DeletePattern,
 };
 
 struct UserAction {

@@ -1,0 +1,57 @@
+{
+  "name": "BrentSignature",
+  "version": "1.0",
+  "createdAt": "2026-01-11T10:00:00",
+  "author": "Brent",
+  "synth": {
+    "waveform": 0,
+    "dutyCycle": 0.5,
+    "startFreq": 440.0,
+    "endFreq": 440.0,
+    "slideSpeed": 0.0,
+    "attack": 0.01,
+    "decay": 0.1,
+    "sustain": 0.7,
+    "release": 0.1,
+    "duration": 0.5,
+    "vibratoFreq": 0.0,
+    "vibratoDepth": 0.0
+  },
+  "effects": {
+    "reverbTime": 0.5,
+    "reverbMix": 0.3,
+    "reverbEnabled": true,
+    "delayTime": 0.3,
+    "delayFeedback": 0.4,
+    "delayMix": 0.2,
+    "delayEnabled": true
+  },
+  "sequencer": {
+    "bpm": 120.0,
+    "numSteps": 16,
+    "stepsData": [
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0},
+      {"active": true, "soundSlot": 0},
+      {"active": false, "soundSlot": 0}
+    ],
+    "slots": [
+      {"name": "Kick", "enabled": true},
+      {"name": "Snare", "enabled": true},
+      {"name": "Hat", "enabled": true},
+      {"name": "Blip", "enabled": true}
+    ]
+  }
+}
