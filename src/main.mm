@@ -23,7 +23,14 @@ public:
           songController(),
           synthView(),
           sequencerView(),
-          songView() {}
+          songView() {
+        // Start real-time preview by default for immediate audio feedback
+        synthController.startRealtimePreview();
+    }
+    
+    ~SynthApp() {
+        synthController.stopRealtimePreview();
+    }
     
     /// Process a frame: render UI and handle actions
     void update() {

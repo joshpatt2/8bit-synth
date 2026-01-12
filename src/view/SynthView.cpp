@@ -135,6 +135,17 @@ std::vector<UserAction> SynthView::render(const SynthParams& params) {
     
     ImGui::Separator();
     
+    // Real-time preview toggle
+    if (ImGui::Button("🔊 Real-Time Preview", ImVec2(150, 30))) {
+        UserAction action;
+        action.type = UserActionType::PlaySound;  // Reuse for now, will handle in controller
+        actions.push_back(action);
+    }
+    
+    ImGui::Text("(All sliders update audio in real-time when preview is active)");
+    
+    ImGui::Separator();
+    
     // Control buttons
     if (ImGui::Button("Play", ImVec2(80, 30))) {
         UserAction action;

@@ -3,16 +3,18 @@
 #include <chrono>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "model/SynthModel.h"
 #include "model/UserAction.h"
 #include "SynthEngine.h"
 #include "AudioOutput.h"
+#include "RealTimeAudio.h"
 #include "Presets.h"
 
 /// Controller for synthesizer sound generation and playback.
 /// Handles user actions from the view and updates model state.
-/// Manages audio rendering and playback.
+/// Manages both real-time audio preview and one-shot sample playback.
 class SynthController {
 public:
     SynthController();
@@ -29,7 +31,16 @@ public:
     /// Check if audio is currently playing
     bool isAudioPlaying() const { return audioOutput.isPlaying(); }
     
-    /// Play current sound
+    /// Check if real-time preview is active
+    bool isRealtimeActive() const { return realtimeAudio->isRunning(); }
+    
+    /// Start real-time audio preview
+    void startRealtimePreview();
+    
+    /// Stop real-time audio preview
+    void stopRealtimePreview();
+    
+    /// Play current sound (one-shot)
     void playSound();
     
     /// Stop current sound
@@ -50,6 +61,7 @@ public:
 private:
     SynthParams params;
     AudioOutput audioOutput;
+    std::unique_ptr<RealTimeAudio> realtimeAudio;
     
     /// Helper: Apply a parameter change and re-render if needed
     void updateParam(const UserAction& action);

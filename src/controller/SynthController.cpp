@@ -4,6 +4,7 @@
 SynthController::SynthController() {
     Presets::init();
     params = Presets::laser();
+    realtimeAudio = std::make_unique<RealTimeAudio>();
 }
 
 void SynthController::handleAction(const UserAction& action) {
@@ -71,6 +72,20 @@ void SynthController::handleAction(const UserAction& action) {
         default:
             break;
     }
+    
+    // Update real-time preview if active
+    if (realtimeAudio && realtimeAudio->isRunning()) {
+        realtimeAudio->updateParameters(params);
+    }
+}
+
+void SynthController::startRealtimePreview() {
+    realtimeAudio->updateParameters(params);
+    realtimeAudio->start();
+}
+
+void SynthController::stopRealtimePreview() {
+    realtimeAudio->stop();
 }
 
 void SynthController::playSound() {
